@@ -8,8 +8,9 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        # These versions refer to the target Termux Python environment
-        python-version: ["3.10", "3.11", "3.12","3.13"]
+        # Pydantic-core uses ABI3 for 3.8+, so one build can often cover many,
+        # but building for specific targets ensures 3.13 support.
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
     
     steps:
       - name: Checkout Pydantic Core
@@ -22,12 +23,15 @@ jobs:
         uses: PyO3/maturin-action@v1
         with:
           target: aarch64-linux-android
-          # FIX: We remove the "-i pythonX.Y" which was causing the lookup error.
-          # We use --compatibility off because manylinux isn't relevant for Android.
+          # maturin v1.7.4+ supports the new license-files TOML format
+          maturin-version: v1.7.4
+          # --compatibility off is crucial for Android targets
           args: --release --out dist --compatibility off
-          # Optional: Use a specific maturin version for stability
-          maturin-version: v1.5.1
-        
+        env:
+          # Tells Maturin to build for the specific Python version without 
+          # needing the local python3.13 binary present on the runner.
+          PYO3_CROSS_PYTHON_VERSION: ${{ matrix.python-version }}
+
       - name: Upload Wheels
         uses: actions/upload-artifact@v4
         with:

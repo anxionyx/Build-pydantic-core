@@ -1,14 +1,14 @@
 name: Build Pydantic Core for Termux
 
 on:
-  workflow_dispatch: # Allows manual trigger from the Actions tab
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        # Build for multiple common Python versions in Termux
+        # These versions refer to the target Termux Python environment
         python-version: ["3.10", "3.11", "3.12","3.13"]
     
     steps:
@@ -16,16 +16,17 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: pydantic/pydantic-core
-          # You can specify a version here, e.g., ref: 'v2.18.2'
           fetch-depth: 0
 
-      - name: Build Wheels for Termux (Android)
+      - name: Build Wheels for Termux
         uses: PyO3/maturin-action@v1
         with:
           target: aarch64-linux-android
-          # We use -i to specify the exact Python interpreter version
-          args: --release --out dist -i python${{ matrix.python-version }}
-          # maturin-action handles the Android NDK and cross-linkers automatically
+          # FIX: We remove the "-i pythonX.Y" which was causing the lookup error.
+          # We use --compatibility off because manylinux isn't relevant for Android.
+          args: --release --out dist --compatibility off
+          # Optional: Use a specific maturin version for stability
+          maturin-version: v1.5.1
         
       - name: Upload Wheels
         uses: actions/upload-artifact@v4

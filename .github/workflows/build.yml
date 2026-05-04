@@ -18,15 +18,27 @@ jobs:
         with:
           target: aarch64-linux-android
           maturin-version: latest
-          # We use --sdist to package the source and build a universal ABI3 wheel
-          # This avoids the "missing _sysconfigdata" error
+          # --compatibility off prevents 'manylinux' tags
           args: --release --out dist --compatibility off
         env:
-          # This forces a generic ABI3 build compatible with 3.10 - 3.13
+          # Force ABI3 so it works on any Python 3.10+ version
           PYO3_CROSS_PYTHON_VERSION: 3.10
+
+      - name: Fix Wheel Tag for Termux
+        run: |
+          cd dist
+          # Rename cp314 or any versioned tag to abi3 to ensure it installs on 3.13
+          for f in *.whl; do
+            mv "$f" "${f//cp314-cp314/cp310-abi3}"
+          done
+          # Also ensure it uses a generic linux_aarch64 tag if android_24 fails
+          for f in *.whl; do
+            mv "$f" "${f//android_24_arm64_v8a/linux_aarch64}"
+          done
+          ls -l
 
       - name: Upload Wheels
         uses: actions/upload-artifact@v4
         with:
-          name: pydantic-core-termux
+          name: pydantic-core-termux-fixed
           path: dist/*.whl

@@ -8,8 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        # Pydantic-core uses ABI3 for 3.8+, so one build can often cover many,
-        # but building for specific targets ensures 3.13 support.
+        # Building for each version ensures specific compatibility
         python-version: ["3.10", "3.11", "3.12", "3.13"]
     
     steps:
@@ -23,13 +22,13 @@ jobs:
         uses: PyO3/maturin-action@v1
         with:
           target: aarch64-linux-android
-          # maturin v1.7.4+ supports the new license-files TOML format
-          maturin-version: v1.7.4
-          # --compatibility off is crucial for Android targets
+          # "latest" ensures we support the new [project] metadata in pyproject.toml
+          maturin-version: latest
+          # --compatibility off is required because 'manylinux' doesn't exist on Android
           args: --release --out dist --compatibility off
         env:
-          # Tells Maturin to build for the specific Python version without 
-          # needing the local python3.13 binary present on the runner.
+          # This tells the cross-compiler which Python version to target 
+          # without looking for a local python3.x binary
           PYO3_CROSS_PYTHON_VERSION: ${{ matrix.python-version }}
 
       - name: Upload Wheels
